@@ -1,0 +1,1 @@
+python3 train_imagenet.py --ngpu 1 --workers 4 --arch resnet --depth 50 --epochs 102 --batch-size 16 --lr 0.1 --att-type CBAM --resume SAVED_MODEL/RESNET50_CBAM_new_name_wrap.pth --start-epoch=101 --prefix RESNET50_IMAGENET_CBAM ./data/ImageNet
