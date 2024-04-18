@@ -72,29 +72,31 @@ class Bottleneck(nn.Module):
             self.cbam = None
 
     def forward(self, x):
-        residual = x
-
-        out = self.conv1(x)
-        out = self.bn1(out)
-        out = self.relu(out)
-
-        out = self.conv2(out)
-        out = self.bn2(out)
-        out = self.relu(out)
-
-        out = self.conv3(out)
-        out = self.bn3(out)
+        x1, coeff = x
+        residual = x1
 
         if self.downsample is not None:
-            residual = self.downsample(x)
+            residual = self.downsample(x1)
+
+        x2 = x1*coeff
+        brn = self.conv1(x2)
+        brn = self.bn1(brn)
+        brn = self.relu(brn)
+
+        brn = self.conv2(brn)
+        brn = self.bn2(brn)
+        brn = self.relu(brn)
+
+        brn = self.conv3(brn)
+        brn = self.bn3(brn)
 
         if not self.cbam is None:
-            out = self.cbam(out)
+            brn = self.cbam(brn)
 
-        out += residual
+        out = residual + brn*coeff
         out = self.relu(out)
 
-        return out
+        return out, coeff
 
 class ResNet(nn.Module):
     def __init__(self, block, layers,  network_type, num_classes, att_type=None):
@@ -156,34 +158,42 @@ class ResNet(nn.Module):
 
         return nn.Sequential(*layers)
 
-    def forward(self, x):
+    def forward(self, x, nblock):
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
         if self.network_type == "ImageNet":
             x = self.maxpool(x)
 
-        x = self.layer1(x)
+        condition1 = torch.any(nblock > 0)
+        coeff1 = torch.where(condition1, 1.0, 0.0)
+        x1, __ = self.layer1((x, coeff1))
         if not self.bam1 is None:
-            x = self.bam1(x)
+            x1 = self.bam1(x1)
 
-        x = self.layer2(x)
+        condition2 = torch.any(nblock > 1)
+        coeff2 = torch.where(condition2, 1.0, 0.0)
+        x2, __ = self.layer2((x1, coeff2))
         if not self.bam2 is None:
-            x = self.bam2(x)
+            x2 = self.bam2(x2)
 
-        x = self.layer3(x)
+        condition3 = torch.any(nblock > 2)
+        coeff3 = torch.where(condition3, 1.0, 0.0)
+        x3, __ = self.layer3((x2, coeff3))
         if not self.bam3 is None:
-            x = self.bam3(x)
+            x3 = self.bam3(x3)
 
-        x = self.layer4(x)
+        condition4 = torch.any(nblock > 3)
+        coeff4 = torch.where(condition4, 1.0, 0.0)
+        x4, __ = self.layer4((x3, coeff4))
 
         if self.network_type == "ImageNet":
-            x = self.avgpool(x)
+            x4 = self.avgpool(x4)
         else:
-            x = F.avg_pool2d(x, 4, count_include_pad=False)
-        x = x.view(x.size(0), -1)
-        x = self.fc(x)
-        return x
+            x4 = F.avg_pool2d(x4, 4, count_include_pad=False)
+        x4 = x4.view(x4.size(0), -1)
+        x4 = self.fc(x4)
+        return x4
 
 def ResidualNet(network_type, depth, num_classes, att_type):
 

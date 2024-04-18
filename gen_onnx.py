@@ -12,7 +12,8 @@ saved_model = os.path.join("SAVED_MODEL","RESNET50_CBAM_new_name_wrap.pth")
 checkpoint = torch.load(saved_model)
 model.load_state_dict(checkpoint['state_dict'])
 
+nblocks = torch.Tensor(torch.randn(1, device="cuda"))
 img = torch.randn(1, 3, 224, 224, device="cuda")
 model_name = 'cbam-resnet50.onnx'
-torch.onnx.export(model.module.cuda(), img, model_name, opset_version=13, verbose=False, input_names = ['img'], output_names = ['logits'])
+torch.onnx.export(model.module.cuda(), (img, nblocks), model_name, opset_version=13, verbose=False, input_names = ['img','nblocks'], output_names = ['features'])
 

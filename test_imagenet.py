@@ -60,7 +60,7 @@ for i, (input, target) in enumerate(val_loader):
       input_var = torch.autograd.Variable(input)
       target_var = torch.autograd.Variable(target)
 
-    output = model(input_var)
+    output = model(input_var, torch.Tensor([4]).cuda()) # can be adjusted in the range [0..4]
     loss = criterion(output, target_var)
 
     # measure accuracy and record loss

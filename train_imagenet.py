@@ -191,7 +191,7 @@ def train(train_loader, model, criterion, optimizer, epoch):
         target_var = torch.autograd.Variable(target)
         
         # compute output
-        output = model(input_var)
+        output = model(input_var, torch.Tensor([4]).cuda()) # can be adjusted in the range [0..4]
         loss = criterion(output, target_var)
         
         # measure accuracy and record loss
@@ -235,7 +235,7 @@ def validate(val_loader, model, criterion, epoch):
         target_var = torch.autograd.Variable(target, volatile=True)
         
         # compute output
-        output = model(input_var)
+        output = model(input_var, torch.Tensor([4]).cuda()) # can be adjusted in the range [0..4]
         loss = criterion(output, target_var)
         
         # measure accuracy and record loss
